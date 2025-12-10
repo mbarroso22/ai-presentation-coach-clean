@@ -32,63 +32,64 @@ function PresentationEditor({ onCreated }) {
   };
 
   const handleSave = async () => {
-    setError("");
-    if (!title.trim()) {
-      setError("Title cannot be empty.");
-      return;
-    }
-    if (slides.length === 0) {
-      setError("You need at least one slide.");
-      return;
-    }
-    if (slides.some((s) => !s.title.trim())) {
-      setError("Each slide must have a title.");
-      return;
+  setError("");
+  if (!title.trim()) {
+    setError("Title cannot be empty.");
+    return;
+  }
+  if (slides.length === 0) {
+    setError("You need at least one slide.");
+    return;
+  }
+  if (slides.some((s) => !s.title.trim())) {
+    setError("Each slide must have a title.");
+    return;
+  }
+
+  setSaving(true);
+  try {
+    // 1) Create presentation on backend
+    const createRes = await fetch("/api/presentations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title,
+        slides,
+      }),
+    });
+
+    if (!createRes.ok) {
+      throw new Error("Failed to create presentation");
     }
 
-    setSaving(true);
-    try {
-      // 1) Create presentation on backend
-      const createRes = await fetch("http://localhost:3001/api/presentations", {
+    const created = await createRes.json();
+
+    // 2) Run analysis
+    const analyzeRes = await fetch(
+      `/api/presentations/${created.id}/analyze`,
+      {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          slides,
-        }),
-      });
-
-      if (!createRes.ok) {
-        throw new Error("Failed to create presentation");
       }
+    );
 
-      const created = await createRes.json();
-
-      // 2) Run analysis
-      const analyzeRes = await fetch(
-        `http://localhost:3001/api/presentations/${created.id}/analyze`,
-        {
-          method: "POST",
-        }
-      );
-
-      if (!analyzeRes.ok) {
-        throw new Error("Failed to analyze presentation");
-      }
-
-      const analyzed = await analyzeRes.json();
-
-      // 3) Notify parent
-      if (onCreated) {
-        onCreated(analyzed.presentation);
-      }
-    } catch (err) {
-      console.error("Error saving presentation:", err);
-      setError(err.message || "Something went wrong while saving.");
-    } finally {
-      setSaving(false);
+    if (!analyzeRes.ok) {
+      throw new Error("Failed to analyze presentation");
     }
+
+    const analyzed = await analyzeRes.json();
+
+    // 3) Notify parent
+    if (onCreated) {
+      onCreated(analyzed.presentation);
+    }
+  } catch (err) {
+    console.error("Error saving presentation:", err);
+    setError(err.message || "Something went wrong while saving.");
+  } finally {
+    setSaving(false);
+  }
   };
+
 
   return (
     <div

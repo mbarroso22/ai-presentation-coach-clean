@@ -11,7 +11,7 @@ function AudienceView({ presentationId }) {
     const fetchPresentation = async () => {
       try {
         const res = await fetch(
-          `http://localhost:3001/api/presentations/${presentationId}`
+          `/api/presentations/${presentationId}`
         );
         if (!res.ok) throw new Error("Failed to fetch presentation");
         const data = await res.json();

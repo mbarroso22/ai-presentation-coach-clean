@@ -1,7 +1,8 @@
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:3001", {
-  transports: ["websocket"], // cleaner + faster
+// Use the same origin as the page (works on the VM and in dev with a proxy)
+const socket = io({
+  transports: ["websocket"],
 });
 
 export default socket;

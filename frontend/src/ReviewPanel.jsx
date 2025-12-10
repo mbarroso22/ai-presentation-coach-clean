@@ -13,7 +13,7 @@ function ReviewPanel({ presentationId }) {
     const fetchPresentation = async () => {
       try {
         const res = await fetch(
-          `http://localhost:3001/api/presentations/${presentationId}`
+          `/api/presentations/${presentationId}`
         );
         if (!res.ok) {
           throw new Error("Failed to fetch presentation");
@@ -45,7 +45,7 @@ function ReviewPanel({ presentationId }) {
 
     try {
       const res = await fetch(
-        `http://localhost:3001/api/presentations/${presentationId}`,
+        `/api/presentations/${presentationId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },

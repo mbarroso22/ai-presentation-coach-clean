@@ -20,7 +20,7 @@ function App() {
     setError("");
 
     try {
-      const createRes = await fetch("http://localhost:3001/api/presentations", {
+      const createRes = await fetch("/api/presentations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -52,7 +52,7 @@ function App() {
       setCreatedId(created.id);
 
       const analyzeRes = await fetch(
-        `http://localhost:3001/api/presentations/${created.id}/analyze`,
+        `/api/presentations/${created.id}/analyze`,
         {
           method: "POST",
         }
@@ -84,7 +84,7 @@ function App() {
 
     try {
       const res = await fetch(
-        `http://localhost:3001/api/presentations/${idNum}`
+        `/api/presentations/${idNum}`
       );
       if (!res.ok) {
         if (res.status === 404) {
