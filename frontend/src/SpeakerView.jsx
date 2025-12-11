@@ -8,7 +8,7 @@ function SpeakerView({ presentationId }) {
   const [currentTimer, setCurrentTimer] = useState(0); // seconds
   const [intervalId, setIntervalId] = useState(null);
 
-  // Join socket room and listen for slide changes
+  // Join the socket.io room for this presentationId
   useEffect(() => {
     if (!presentationId) return;
 
@@ -29,9 +29,7 @@ function SpeakerView({ presentationId }) {
   useEffect(() => {
     const fetchPresentation = async () => {
       try {
-        const res = await fetch(
-          `/api/presentations/${presentationId}`
-        );
+        const res = await fetch(`/api/presentations/${presentationId}`);
         if (!res.ok) {
           throw new Error("Failed to fetch presentation");
         }
@@ -42,12 +40,12 @@ function SpeakerView({ presentationId }) {
       }
     };
 
-    if (presentationId) {
+    if (presentationId != null) {
       fetchPresentation();
     }
   }, [presentationId]);
 
-  // Simple timer: restart when currentIndex changes
+  // Timer: restart whenever the current slide changes
   useEffect(() => {
     if (!presentation) return;
 
@@ -71,6 +69,7 @@ function SpeakerView({ presentationId }) {
 
   const { title, slides, analysis } = presentation;
   const slide = slides[currentIndex];
+
   const analysisForSlide =
     analysis && analysis.find((a) => a.slideIndex === currentIndex);
 
@@ -80,10 +79,16 @@ function SpeakerView({ presentationId }) {
       : 30;
 
   const importance = analysisForSlide?.importance || "medium";
-  const speakerNotes =
-    analysisForSlide?.speakerNotes || "No speaker notes yet.";
-  const speakingScript = analysisForSlide?.speakingScript || "";
-  const transitionToNext = analysisForSlide?.transitionToNext || "";
+  const coachingNotes =
+    analysisForSlide?.speakerNotes ||
+    "No coaching notes available for this slide.";
+  const keyPoints = analysisForSlide?.keyPoints || [];
+  const speakingScript =
+    analysisForSlide?.speakingScript ||
+    "No suggested script generated for this slide.";
+  const transitionToNext =
+    analysisForSlide?.transitionToNext ||
+    "No specific transition line generated.";
 
   const overTime = currentTimer > expectedTime;
   const progressPercent = Math.min(
@@ -129,12 +134,12 @@ function SpeakerView({ presentationId }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "2fr 1.5fr",
+          gridTemplateColumns: "2fr 1.7fr",
           gap: "1.5rem",
           marginTop: "1rem",
         }}
       >
-        {/* Slide content */}
+        {/* Left: slide content preview */}
         <div
           style={{
             padding: "1rem",
@@ -151,116 +156,131 @@ function SpeakerView({ presentationId }) {
           </p>
         </div>
 
-        {/* AI speaker notes + timing */}
+        {/* Right: AI coaching panel */}
         <div
           style={{
             padding: "1rem",
             borderRadius: "0.75rem",
             background: "#020617",
             border: "1px solid #1f2937",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.75rem",
           }}
         >
-          <h4 style={{ fontSize: "1.1rem", marginBottom: "0.5rem" }}>
-            AI Speaker Notes
-          </h4>
+          {/* Coaching tips */}
+          <div>
+            <h4 style={{ fontSize: "1.1rem", marginBottom: "0.25rem" }}>
+              Coaching Tips
+            </h4>
+            <p
+              style={{
+                whiteSpace: "pre-wrap",
+                lineHeight: 1.5,
+                color: "#e5e7eb",
+              }}
+            >
+              {coachingNotes}
+            </p>
+          </div>
 
-          {/* High-level guidance */}
-          <p
-            style={{
-              whiteSpace: "pre-wrap",
-              lineHeight: 1.5,
-              marginBottom: "0.75rem",
-              color: "#e5e7eb",
-            }}
-          >
-            {speakerNotes}
-          </p>
-
-          {/* Suggested script you can almost read word-for-word */}
-          {speakingScript && (
-            <div style={{ marginBottom: "0.75rem" }}>
-              <h5
+          {/* Key Points */}
+          <div>
+            <h4 style={{ fontSize: "1.1rem", marginBottom: "0.25rem" }}>
+              Key Points to Hit
+            </h4>
+            {keyPoints.length > 0 ? (
+              <ul
                 style={{
-                  fontWeight: 600,
-                  marginBottom: "0.25rem",
-                  fontSize: "0.95rem",
-                }}
-              >
-                Suggested Script
-              </h5>
-              <p
-                style={{
-                  whiteSpace: "pre-wrap",
-                  lineHeight: 1.5,
-                  fontSize: "0.95rem",
+                  marginLeft: "1rem",
+                  marginTop: "0.25rem",
+                  marginBottom: "0.5rem",
                   color: "#e5e7eb",
                 }}
               >
-                {speakingScript}
-              </p>
-            </div>
-          )}
-
-          {/* Transition to next slide */}
-          {transitionToNext && (
-            <div style={{ marginBottom: "0.75rem" }}>
-              <h5
-                style={{
-                  fontWeight: 600,
-                  marginBottom: "0.25rem",
-                  fontSize: "0.95rem",
-                }}
-              >
-                Transition to Next Slide
-              </h5>
-              <p
-                style={{
-                  fontSize: "0.9rem",
-                  fontStyle: "italic",
-                  color: "#cbd5f5",
-                  whiteSpace: "pre-wrap",
-                }}
-              >
-                {transitionToNext}
-              </p>
-            </div>
-          )}
-
-          <h4 style={{ fontSize: "1.1rem", marginBottom: "0.25rem" }}>
-            Timing
-          </h4>
-          <p style={{ marginBottom: "0.5rem", color: "#cbd5f5" }}>
-            Time on this slide: {currentTimer}s (expected: {expectedTime}s)
-          </p>
-
-          <div
-            style={{
-              height: "10px",
-              borderRadius: "999px",
-              background: "#020617",
-              border: "1px solid #1e293b",
-              overflow: "hidden",
-              marginBottom: "0.5rem",
-            }}
-          >
-            <div
-              style={{
-                height: "100%",
-                width: `${progressPercent}%`,
-                background: overTime ? "#f97373" : "#22c55e",
-                transition: "width 0.3s ease",
-              }}
-            />
+                {keyPoints.map((kp, idx) => (
+                  <li key={idx} style={{ marginBottom: "0.15rem" }}>
+                    {kp}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p style={{ color: "#9ca3af" }}>No specific key points listed.</p>
+            )}
           </div>
 
-          {overTime ? (
-            <p style={{ color: "#f97373" }}>
-              ⚠ You're over the suggested time for this slide. Consider moving
-              on soon.
+          {/* Script */}
+          <div>
+            <h4 style={{ fontSize: "1.1rem", marginBottom: "0.25rem" }}>
+              Suggested Script
+            </h4>
+            <p
+              style={{
+                whiteSpace: "pre-wrap",
+                lineHeight: 1.5,
+                fontSize: "0.95rem",
+                color: "#e5e7eb",
+              }}
+            >
+              {speakingScript}
             </p>
-          ) : (
-            <p style={{ color: "#22c55e" }}>✓ Pacing looks okay so far.</p>
-          )}
+          </div>
+
+          {/* Transition line */}
+          <div>
+            <h4 style={{ fontSize: "1.1rem", marginBottom: "0.25rem" }}>
+              Transition to Next Slide
+            </h4>
+            <p
+              style={{
+                whiteSpace: "pre-wrap",
+                lineHeight: 1.5,
+                fontStyle: "italic",
+                color: "#cbd5f5",
+              }}
+            >
+              {transitionToNext}
+            </p>
+          </div>
+
+          {/* Timing / pacing */}
+          <div style={{ marginTop: "0.25rem" }}>
+            <h4 style={{ fontSize: "1.1rem", marginBottom: "0.25rem" }}>
+              Timing
+            </h4>
+            <p style={{ marginBottom: "0.5rem", color: "#cbd5f5" }}>
+              Time on this slide: {currentTimer}s (expected: {expectedTime}s)
+            </p>
+
+            <div
+              style={{
+                height: "10px",
+                borderRadius: "999px",
+                background: "#020617",
+                border: "1px solid #1e293b",
+                overflow: "hidden",
+                marginBottom: "0.5rem",
+              }}
+            >
+              <div
+                style={{
+                  height: "100%",
+                  width: `${progressPercent}%`,
+                  background: overTime ? "#f97373" : "#22c55e",
+                  transition: "width 0.3s ease",
+                }}
+              />
+            </div>
+
+            {overTime ? (
+              <p style={{ color: "#f97373" }}>
+                ⚠ You're over the suggested time for this slide. Consider
+                wrapping up and transitioning.
+              </p>
+            ) : (
+              <p style={{ color: "#22c55e" }}>✓ Pacing looks okay so far.</p>
+            )}
+          </div>
         </div>
       </div>
 
